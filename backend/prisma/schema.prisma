@@ -1,0 +1,344 @@
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+enum Role {
+  OWNER
+  ADMIN
+  MEMBER
+}
+
+enum MeetingStatus {
+  PENDING
+  PROCESSING
+  COMPLETED
+  FAILED
+}
+
+enum TaskStatus {
+  Pending
+  InProgress
+  Completed
+}
+
+enum Priority {
+  Low
+  Medium
+  High
+}
+
+enum Impact {
+  Low
+  Medium
+  High
+}
+
+enum ProcessingStatus {
+  PENDING
+  PROCESSING
+  COMPLETED
+  FAILED
+}
+
+model Workspace {
+  id            String            @id @default(uuid())
+  name          String
+  plan          String            @default("Enterprise Pro")
+  retentionDays Int               @default(365)
+  createdAt     DateTime          @default(now())
+  updatedAt     DateTime          @updatedAt
+
+  users         User[]
+  members       WorkspaceMember[]
+  meetings      Meeting[]
+  tasks         ActionItem[]
+  decisions     MeetingDecision[]
+  integrations  Integration[]
+  credentials   OAuthCredential[]
+  embeddings    AIEmbedding[]
+  notifications Notification[]
+  auditLogs     AuditLog[]
+  segments      TranscriptSegment[]
+}
+
+model User {
+  id           String            @id @default(uuid())
+  email        String            @unique
+  passwordHash String
+  name         String
+  avatar       String?
+  role         Role              @default(MEMBER)
+  workspaceId  String
+  workspace    Workspace         @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  createdAt    DateTime          @default(now())
+  updatedAt    DateTime          @updatedAt
+
+  memberships  WorkspaceMember[]
+  tokens       RefreshToken[]
+  auditLogs    AuditLog[]        @relation("ActorAuditLogs")
+  notifications Notification[]
+}
+
+model WorkspaceMember {
+  id          String    @id @default(uuid())
+  workspaceId String
+  workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  userId      String
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  role        Role      @default(MEMBER)
+  status      String    @default("Active")
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@unique([workspaceId, userId])
+}
+
+model RefreshToken {
+  id        String   @id @default(uuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  token     String   @unique
+  expiresAt DateTime
+  revoked   Boolean  @default(false)
+  createdAt DateTime @default(now())
+}
+
+model Meeting {
+  id                   String               @id @default(uuid())
+  workspaceId          String
+  workspace            Workspace            @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  title                String
+  platform             String               // 'google-meet' | 'teams' | 'zoom'
+  date                 String
+  time                 String
+  duration             String
+  status               MeetingStatus        @default(COMPLETED)
+  isRecordingAvailable Boolean              @default(true)
+  fileSize             String?
+  sentimentScore       Int?
+  sentimentText        String?
+  createdAt            DateTime             @default(now())
+  updatedAt            DateTime             @updatedAt
+
+  participants         MeetingParticipant[]
+  transcript           Transcript?
+  summary              MeetingSummary?
+  decisions            MeetingDecision[]
+  actionItems          ActionItem[]
+  segments             TranscriptSegment[]
+  embeddings           AIEmbedding[]
+
+  @@index([workspaceId])
+  @@index([date])
+}
+
+model MeetingParticipant {
+  id               String   @id @default(uuid())
+  meetingId        String
+  meeting          Meeting  @relation(fields: [meetingId], references: [id], onDelete: Cascade)
+  name             String
+  email            String?
+  role             String?
+  avatar           String?
+  speechPercentage Int?
+  createdAt        DateTime @default(now())
+}
+
+model Transcript {
+  id        String              @id @default(uuid())
+  meetingId String              @unique
+  meeting   Meeting             @relation(fields: [meetingId], references: [id], onDelete: Cascade)
+  fullText  String?
+  createdAt DateTime            @default(now())
+  updatedAt DateTime            @updatedAt
+
+  segments  TranscriptSegment[]
+}
+
+model TranscriptSegment {
+  id           String        @id @default(uuid())
+  transcriptId String
+  transcript   Transcript    @relation(fields: [transcriptId], references: [id], onDelete: Cascade)
+  meetingId    String
+  meeting      Meeting       @relation(fields: [meetingId], references: [id], onDelete: Cascade)
+  workspaceId  String
+  workspace    Workspace     @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  speaker      String
+  avatar       String?
+  timestamp    String
+  text         String
+  segmentIndex Int
+  createdAt    DateTime      @default(now())
+
+  embeddings   AIEmbedding[]
+
+  @@index([meetingId])
+  @@index([workspaceId])
+  @@index([speaker])
+}
+
+model MeetingSummary {
+  id              String            @id @default(uuid())
+  meetingId       String            @unique
+  meeting         Meeting           @relation(fields: [meetingId], references: [id], onDelete: Cascade)
+  overview        String
+  confidenceScore Int               @default(98)
+  createdAt       DateTime          @default(now())
+  updatedAt       DateTime          @updatedAt
+
+  keyPoints       MeetingKeyPoint[]
+  decisions       MeetingDecision[]
+}
+
+model MeetingKeyPoint {
+  id         String         @id @default(uuid())
+  summaryId  String
+  summary    MeetingSummary @relation(fields: [summaryId], references: [id], onDelete: Cascade)
+  pointIndex Int
+  text       String
+}
+
+model MeetingDecision {
+  id          String          @id @default(uuid())
+  meetingId   String
+  meeting     Meeting         @relation(fields: [meetingId], references: [id], onDelete: Cascade)
+  workspaceId String
+  workspace   Workspace       @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  summaryId   String?
+  summary     MeetingSummary? @relation(fields: [summaryId], references: [id], onDelete: SetNull)
+  title       String
+  description String
+  owner       String
+  timestamp   String
+  impact      Impact          @default(High)
+  createdAt   DateTime        @default(now())
+
+  @@index([workspaceId])
+  @@index([meetingId])
+}
+
+model ActionItem {
+  id             String     @id @default(uuid())
+  meetingId      String
+  meeting        Meeting    @relation(fields: [meetingId], references: [id], onDelete: Cascade)
+  workspaceId    String
+  workspace      Workspace  @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  task           String
+  assignee       String
+  assigneeAvatar String?
+  dueDate        String
+  priority       Priority   @default(Medium)
+  status         TaskStatus @default(Pending)
+  timestamp      String?
+  createdAt      DateTime   @default(now())
+  updatedAt      DateTime   @updatedAt
+
+  @@index([workspaceId])
+  @@index([meetingId])
+  @@index([status])
+}
+
+model Integration {
+  id               String            @id @default(uuid())
+  workspaceId      String
+  workspace        Workspace         @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  platformKey      String            // 'google-meet' | 'teams' | 'zoom'
+  name             String
+  description      String
+  connected        Boolean           @default(false)
+  connectedAccount String?
+  lastSync         String?           @default("Never")
+  autoSync         Boolean           @default(true)
+  createdAt        DateTime          @default(now())
+  updatedAt        DateTime          @updatedAt
+
+  credentials      OAuthCredential[]
+
+  @@unique([workspaceId, platformKey])
+}
+
+model OAuthCredential {
+  id                    String      @id @default(uuid())
+  integrationId         String
+  integration           Integration @relation(fields: [integrationId], references: [id], onDelete: Cascade)
+  workspaceId           String
+  workspace             Workspace   @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  provider              String
+  encryptedAccessToken  String
+  encryptedRefreshToken String?
+  expiresAt             DateTime?
+  scope                 String?
+  createdAt             DateTime    @default(now())
+  updatedAt             DateTime    @updatedAt
+
+  @@index([workspaceId])
+  @@index([provider])
+}
+
+model WebhookEvent {
+  id               String           @id @default(uuid())
+  provider         String
+  eventId          String           @unique
+  eventType        String
+  receivedAt       DateTime         @default(now())
+  payloadHash      String
+  processingStatus ProcessingStatus @default(PENDING)
+  createdAt        DateTime         @default(now())
+
+  @@index([provider, eventId])
+}
+
+model AIEmbedding {
+  id                  String            @id @default(uuid())
+  transcriptSegmentId String
+  segment             TranscriptSegment @relation(fields: [transcriptSegmentId], references: [id], onDelete: Cascade)
+  meetingId           String
+  meeting             Meeting           @relation(fields: [meetingId], references: [id], onDelete: Cascade)
+  workspaceId         String
+  workspace           Workspace         @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  vectorText          String
+  model               String            @default("text-embedding-3-large")
+  createdAt           DateTime          @default(now())
+
+  @@index([workspaceId])
+  @@index([meetingId])
+}
+
+model Notification {
+  id          String    @id @default(uuid())
+  userId      String
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  workspaceId String
+  workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  title       String
+  text        String
+  type        String    @default("info")
+  isRead      Boolean   @default(false)
+  createdAt   DateTime  @default(now())
+
+  @@index([userId, isRead])
+}
+
+model AuditLog {
+  id          String    @id @default(uuid())
+  workspaceId String
+  workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  actorId     String
+  actor       User      @relation("ActorAuditLogs", fields: [actorId], references: [id], onDelete: Cascade)
+  actorEmail  String
+  action      String
+  resource    String
+  resourceId  String?
+  requestId   String?
+  ipAddress   String?
+  details     String?
+  createdAt   DateTime  @default(now())
+
+  @@index([workspaceId])
+  @@index([action])
+}

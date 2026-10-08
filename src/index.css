@@ -1,0 +1,98 @@
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700&display=swap');
+@import "tailwindcss";
+
+@theme {
+  --font-sans: 'Plus Jakarta Sans', 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  --color-brand-purple: #6F56C9;
+  --color-brand-purple-hover: #5B43B7;
+  --color-brand-light-purple: #CBB7EC;
+  --color-brand-lavender: #F8F6FC;
+  --color-brand-sky: #AFD4EE;
+  --color-brand-cyan: #18C6D9;
+  --color-brand-peach: #F5D6B7;
+  --color-brand-text: #202024;
+  --color-brand-secondary: #73737C;
+  --color-brand-muted: #A1A1AA;
+  --color-brand-border: #ECECF1;
+  --color-brand-bg: #FAFAFC;
+}
+
+:root {
+  font-family: 'Plus Jakarta Sans', 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  color-scheme: light;
+  background-color: #FAFAFC;
+  color: #202024;
+}
+
+body {
+  margin: 0;
+  padding: 0;
+  background-color: #FAFAFC;
+  color: #202024;
+  min-height: 100vh;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Organic curved line background decoration */
+.bg-organic-lines {
+  background-image: radial-gradient(circle at 10% 20%, rgba(203, 183, 236, 0.15) 0%, transparent 40%),
+                    radial-gradient(circle at 90% 80%, rgba(175, 212, 238, 0.2) 0%, transparent 45%),
+                    radial-gradient(circle at 50% 50%, rgba(245, 214, 183, 0.12) 0%, transparent 50%);
+}
+
+.bg-hero-pattern {
+  background-color: #FAFAFC;
+  background-image: radial-gradient(#E8E5F4 1px, transparent 1px);
+  background-size: 24px 24px;
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #D4D4DC;
+  border-radius: 9999px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #A1A1AA;
+}
+
+/* Floating animation for illustrations */
+@keyframes float {
+  0% { transform: translateY(0px); }
+  50% { transform: translateY(-8px); }
+  100% { transform: translateY(0px); }
+}
+
+.animate-float {
+  animation: float 5s ease-in-out infinite;
+}
+
+@keyframes float-slow {
+  0% { transform: translateY(0px) rotate(0deg); }
+  50% { transform: translateY(-12px) rotate(1deg); }
+  100% { transform: translateY(0px) rotate(0deg); }
+}
+
+.animate-float-slow {
+  animation: float-slow 7s ease-in-out infinite;
+}
+
+/* Soft Fade In */
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.animate-fade-in {
+  animation: fadeIn 0.25s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}

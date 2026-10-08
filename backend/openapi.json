@@ -1,0 +1,86 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "MeetAI Backend API",
+    "description": "Production-grade REST API for MeetAI meeting intelligence platform",
+    "version": "1.0.0"
+  },
+  "servers": [
+    {
+      "url": "http://localhost:5000/api/v1",
+      "description": "Local Development Server"
+    }
+  ],
+  "components": {
+    "securitySchemes": {
+      "bearerAuth": {
+        "type": "http",
+        "scheme": "bearer",
+        "bearerFormat": "JWT"
+      }
+    }
+  },
+  "security": [
+    {
+      "bearerAuth": []
+    }
+  ],
+  "paths": {
+    "/auth/signup": {
+      "post": {
+        "summary": "Register a new user and workspace",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "name": { "type": "string" },
+                  "email": { "type": "string" },
+                  "password": { "type": "string" },
+                  "workspaceName": { "type": "string" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": { "description": "User created successfully" }
+        }
+      }
+    },
+    "/auth/login": {
+      "post": {
+        "summary": "Authenticate user and issue JWT token",
+        "responses": {
+          "200": { "description": "Authenticated successfully" }
+        }
+      }
+    },
+    "/meetings": {
+      "get": {
+        "summary": "List meetings in workspace",
+        "responses": {
+          "200": { "description": "Meetings list" }
+        }
+      }
+    },
+    "/tasks": {
+      "get": {
+        "summary": "List action items in workspace",
+        "responses": {
+          "200": { "description": "Action items list" }
+        }
+      }
+    },
+    "/ai/search": {
+      "get": {
+        "summary": "Cross-meeting semantic search (RAG)",
+        "responses": {
+          "200": { "description": "AI synthesized answer with grounded citations" }
+        }
+      }
+    }
+  }
+}
